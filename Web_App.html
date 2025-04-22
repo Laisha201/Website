@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+    <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="scratch.html">scratch page</a></li>
+<head>
+ <title>Stick Figure Dodger</title>
+ <style>
+  body { margin: 0; overflow: hidden; background-color: #ADD8E6; }
+  canvas { display: block; }
+  #lives {
+   position: absolute;
+   top: 10px;
+   left: 10px;
+   font-size: 20px;
+   color: black;
+   display: flex;
+  }
+  #lives img {
+   height: 20px;
+   margin-right: 5px;
+  }
+  #gameOver {
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   font-size: 30px;
+   color: red;
+   display: none;
+  }
+  #countdown {
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   font-size: 40px;
+   color: black;
+   display: block;
+  }
+ </style>
+</head>
+<body>
+ <canvas id="gameCanvas"></canvas>
+ <div id="lives">
+  <img id="heart1" src="heart.png">
+  <img id="heart2" src="heart.png">
+  <img id="heart3" src="heart.png">
+  <img id="heart4" src="heart.png">
+  <img id="heart5" src="heart.png">
+ </div>
+ <div id="gameOver">Game Over</div>
+ <div id="countdown">5</div>
+ <script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  // Stick figure properties
+  const stickFigure = {
+   x: 50,
+   y: canvas.height / 2,
+   height: 40,
+   width: 20,
+   speed: 5
+  };
+  // Building properties
+  const initialBuildingsTop = [
+       { x: 300, width: 150, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#808080" },
+       { x: 500, width: 180, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#A9A9A9" },
+       { x: 700, width: 140, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#696969" },
+       { x: 900, width: 200, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#808080" },
+       { x: 1150, width: 170, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#A9A9A9" }
+  ];
+  const initialBuildingsBottom = [
+       { x: 300, width: 150, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#808080" },
+       { x: 500, width: 180, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#A9A9A9" },
+       { x: 700, width: 140, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#696969" },
+       { x: 900, width: 200, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#808080" },
+       { x: 1150, width: 170, height: Math.random() * (canvas.height / 2 - 50) + 50, color: "#A9A9A9" }
+  ];
+  let buildingsTop = [...initialBuildingsTop];
+  let buildingsBottom = [...initialBuildingsBottom];
+  let scrollSpeed = 2.5;
+  let gameSpeed = 1;
+  let lives = 5;
+  let gameOver = false;
+  let countdownTimer = 5;
+  let gameStarted = false;
+  const livesDisplay = document.getElementById("lives");
+  const gameOverDisplay = document.getElementById("gameOver");
+  const countdownDisplay = document.getElementById("countdown");
+  function drawStickFigure() {
+   ctx.fillStyle = "black";
+   ctx.fillRect(stickFigure.x, stickFigure.y, stickFigure.width, stickFigure.height);
+  }
+  function drawBuildings() {
+   buildingsTop.forEach(building => {
+    ctx.fillStyle = building.color;
+    ctx.fillRect(building.x, 0, building.width, building.height);
+   });
+   buildingsBottom.forEach(building => {
+    ctx.fillStyle = building.color;
+    ctx.fillRect(building.x, canvas.height - building.height, building.width, building.height);
+   });
+  }
+  function updateStickFigure() {
+   if (gameOver) {
+    return;
+   }
+   if (stickFigure.y < 0) {
+    stickFigure.y = 0;
+   }
+   if (stickFigure.y > canvas.height - stickFigure.height) {
+    stickFigure.y = canvas.height - stickFigure.height;
+   }
+  }
+  function updateBuildings() {
+   if (gameStarted) {
+    buildingsTop.forEach(building => {
+     building.x -= scrollSpeed * gameSpeed;
+    });
+    buildingsBottom.forEach(building => {
+     building.x -= scrollSpeed * gameSpeed;
+    });
+    if (buildingsTop[0].x + buildingsTop[0].width < 0) {
+     buildingsTop.shift();
+     const newWidth = Math.random() * 100 + 150;
+     const newHeight = Math.random() * (canvas.height / 2 - 100) + 50;
+     const newX = buildingsTop[buildingsTop.length - 1].x + buildingsTop[buildingsTop.length - 1].width + 250;
+     const colors = ["#808080", "#A9A9A9", "#696969"];
+     const newColor = colors[Math.floor(Math.random() * colors.length)];
+     buildingsTop.push({ x: newX, width: newWidth, height: newHeight, color: newColor });
+     buildingsBottom.shift();
+     const newBottomWidth = Math.random() * 100 + 150;
+     const newBottomHeight = canvas.height - buildingsTop[buildingsTop.length-1].height - 150;
+     const newBottomX = buildingsBottom[buildingsBottom.length - 1].x + buildingsBottom[buildingsBottom.length - 1].width + 250;
+     const newBottomColor =  ["#808080", "#A9A9A9", "#696969"];
+     const newBottomColor2 = colors[Math.floor(Math.random() * colors.length)];
+     buildingsBottom.push({ x: newBottomX, width: newBottomWidth, height: newBottomHeight, color: newBottomColor2 });
+    }
+   }
+  }
+  function checkCollision() {
+   let collision = false;
+   buildingsTop.forEach(building => {
+         if (
+           stickFigure.x < building.x + building.width &&
+           stickFigure.x + stickFigure.width > building.x &&
+           stickFigure.y < building.height
+         ) {
+           collision = true;
+         }
+   });
+   buildingsBottom.forEach(building => {
+         if (
+           stickFigure.x < building.x + building.width &&
+           stickFigure.x + stickFigure.width > building.x &&
+           stickFigure.y + stickFigure.height > canvas.height - building.height
+         ) {
+           collision = true;
+         }
+   });
+   return collision;
+  }
+  function loseLife() {
+   if (!gameOver) {
+    lives--;
+    if (lives > 0) {
+       const heart = document.getElementById(`heart${lives + 1}`);
+       heart.style.display = 'none';
+    }
+    if (lives <= 0) {
+     gameOver = true;
+     gameOverDisplay.style.display = "block";
+     gameStarted = false;
+    }
+   }
+  }
+  function resetGame() {
+   lives = 5;
+   for (let i = 1; i <= 5; i++) {
+       const heart = document.getElementById(`heart${i}`);
+       heart.style.display = 'inline-block';
+   }
+   gameOver = false;
+   gameOverDisplay.style.display = "none";
+   stickFigure.x = 50;
+   stickFigure.y = canvas.height / 2;
+   buildingsTop = [...initialBuildingsTop];
+   buildingsBottom = [...initialBuildingsBottom];
+   gameSpeed = 1;
+   gameStarted = false;
+   countdownTimer = 5;
+   countdownDisplay.style.display = "block";
+  }
+  function updateCountdown() {
+   if (!gameStarted) {
+    countdownTimer--;
+    countdownDisplay.textContent = countdownTimer;
+    if (countdownTimer <= 0) {
+     countdownDisplay.style.display = "none";
+     gameSpeed = 1;
+     gameStarted = true;
+    }
+   }
+  }
+  function gameLoop() {
+   ctx.clearRect(0, 0, canvas.width, canvas.height);
+   if (!gameStarted && countdownTimer > 0) {
+    updateCountdown();
+   }
+   if (gameStarted) {
+       updateBuildings();
+       updateStickFigure();
+       if (checkCollision()) {
+        loseLife();
+       }
+   }
+   drawBuildings();
+   drawStickFigure();
+   if (gameOver) {}
+   requestAnimationFrame(gameLoop);
+  }
+  const keys = {};
+  document.addEventListener("keydown", (event) => {
+   keys[event.key] = true;
+   if (!gameOver && !isRespawning) {
+    if (event.key === "ArrowUp") {
+     stickFigure.y -= stickFigure.speed;
+    } else if (event.key === "ArrowDown") {
+     stickFigure.y += stickFigure.speed;
+    } else if (event.key === "ArrowRight") {
+     stickFigure.x += stickFigure.speed;
+    } else if (event.key === "ArrowLeft") {
+     stickFigure.x -= stickFigure.speed;
+    }
+    if (!gameStarted && countdownTimer <= 0) {
+     gameSpeed = 1;
+     gameStarted = true;
+    }
+   } else if (gameOver && event.key) {
+    resetGame();
+   }
+  });
+  document.addEventListener("keyup", (event) => {
+   keys[event.key] = false;
+  });
+  function updatePlayerMovement() {
+   if (keys["ArrowUp"]) {
+    stickFigure.y -= stickFigure.speed;
+   }
+   if (keys["ArrowDown"]) {
+    stickFigure.y += stickFigure.speed;
+   }
+   if (keys["ArrowRight"]) {
+    stickFigure.x += stickFigure.speed;
+   }
+   if (keys["ArrowLeft"]) {
+    stickFigure.x -= stickFigure.speed;
+   }
+  }
+  function gameLoop() {
+   ctx.clearRect(0, 0, canvas.width, canvas.height);
+   if (!gameStarted && countdownTimer > 0) {
+    updateCountdown();
+   }
+   if (gameStarted) {
+       updateBuildings();
+       updateStickFigure();
+       updatePlayerMovement();
+       drawBuildings();
+       drawStickFigure();
+       if (checkCollision()) {
+        loseLife();
+       }
+   }
+   if (gameOver) {}
+   requestAnimationFrame(gameLoop);
+  }
+  gameLoop();
+  window.addEventListener('resize', () => {
+   canvas.width = window.innerWidth;
+   canvas.height = window.innerHeight;
+  });
+ </script>
+</body>
+</html>
